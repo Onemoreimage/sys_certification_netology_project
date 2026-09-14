@@ -216,37 +216,72 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 
 
 
-\## 📸 Скриншоты
+## 📸 Скриншоты
 
+### 1. Развёртывание инфраструктуры (Terraform)
 
+**Создание 25 ресурсов в Yandex Cloud через `terraform apply`:**
 
-\### Terraform
+| Ресурсы VPC | Ресурсы Compute | Ресурсы ALB |
+|---|---|---|
+| ![terraform apply 1](docs/screenshots/01-terraform-apply.png) | ![terraform apply 2](docs/screenshots/02-terraform-apply.png) | ![terraform apply 3](docs/screenshots/03-terraform-apply.png) |
+| ![terraform apply 4](docs/screenshots/04-terraform-apply.png) | ![terraform apply 5](docs/screenshots/05-terraform-apply.png) | |
 
-!\[terraform apply](docs/screenshots/01-terraform-apply.png)
-!\[terraform apply](docs/screenshots/02-terraform-apply.png)
-!\[terraform apply](docs/screenshots/03-terraform-apply.png)
-!\[terraform apply](docs/screenshots/04-terraform-apply.png)
-!\[terraform apply](docs/screenshots/05-terraform-apply.png)
+**Результат применения — публичные IP и FQDN всех ресурсов:**
 
+![terraform output](docs/screenshots/06-terraform-output.png)
 
-\### Сайт через ALB
+---
 
-!\[Nginx site](docs/screenshots/04-nginx-site.png)
-!\[Nginx site](docs/screenshots/05-nginx-site.png)
+### 2. Веб-серверы и балансировщик
 
+**Сайт открывается через Application Load Balancer, трафик распределяется между `web-01` и `web-02`:**
 
+| Web-01 | Web-02 |
+|---|---|
+| ![site on web-01](docs/screenshots/07-nginx-site-web01.png) | ![site on web-02](docs/screenshots/08-nginx-site-web02.png) |
 
-\### Zabbix
+**Распределение трафика 50/50 подтверждается дашбордом Kibana:**
 
-!\[Zabbix dashboard](docs/screenshots/06-zabbix-dashboard.png)
+![traffic split](docs/screenshots/09-kibana-traffic-split.png)
 
+---
 
+### 3. Мониторинг (Zabbix)
 
-\### Kibana
+**Все хосты подключены и отправляют метрики:**
 
-!\[Kibana dashboard](docs/screenshots/10-kibana-dashboard.png)
+![Zabbix hosts](docs/screenshots/10-zabbix-hosts.png)
 
+**Дашборд с USE-метриками (Utilization, Saturation, Errors):**
 
+![Zabbix dashboard](docs/screenshots/11-zabbix-dashboard.png)
+
+**Web Scenario `Check site via ALB` — мониторинг HTTP-доступности сайта:**
+
+| Статус сценария | Время отклика |
+|---|---|
+| ![web scenario](docs/screenshots/12-zabbix-web-scenario.png) | ![response time](docs/screenshots/13-zabbix-response-time.png) |
+
+---
+
+### 4. Логирование (ELK Stack)
+
+**Логи Nginx из Elasticsearch в Kibana Discover:**
+
+![Kibana discover](docs/screenshots/14-kibana-discover.png)
+
+**Дашборд с распределением логов по веб-серверам:**
+
+![Kibana dashboard](docs/screenshots/15-kibana-dashboard.png)
+
+---
+
+### 5. Резервное копирование
+
+**Ежедневные снапшоты дисков всех ВМ (retention 7 дней):**
+
+![snapshots](docs/screenshots/16-snapshots.png)
 
 
 
