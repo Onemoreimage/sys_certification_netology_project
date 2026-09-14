@@ -12,7 +12,6 @@
 
 
 
-\- \[Архитектура](#архитектура)
 
 \- \[Технологии](#технологии)
 
@@ -23,12 +22,6 @@
 \- \[Скриншоты](#скриншоты)
 
 
-
-\## 🏗️ Архитектура
-
-
-
-!\[Архитектура](docs/architecture.png)
 
 
 
@@ -96,19 +89,6 @@
 
 
 
-\## 🚀 Быстрый старт
-
-
-
-\### Предварительные требования
-
-
-
-1\. \*\*Yandex Cloud CLI\*\*: \[инструкция](https://cloud.yandex.ru/docs/cli/quickstart)
-
-2\. \*\*Terraform\*\* >= 1.0: \[инструкция](https://developer.hashicorp.com/terraform/downloads)
-
-3\. \*\*SSH-ключ\*\* `\~/.ssh/id\_ed25519`
 
 
 
@@ -243,12 +223,16 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 \### Terraform
 
 !\[terraform apply](docs/screenshots/01-terraform-apply.png)
-
+!\[terraform apply](docs/screenshots/02-terraform-apply.png)
+!\[terraform apply](docs/screenshots/03-terraform-apply.png)
+!\[terraform apply](docs/screenshots/04-terraform-apply.png)
+!\[terraform apply](docs/screenshots/05-terraform-apply.png)
 
 
 \### Сайт через ALB
 
 !\[Nginx site](docs/screenshots/04-nginx-site.png)
+!\[Nginx site](docs/screenshots/05-nginx-site.png)
 
 
 
