@@ -258,7 +258,7 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 
 **Web Scenario `Check site via ALB` — мониторинг HTTP-доступности сайта:**
 
-![web scenario](docs/screenshots/12-zabbix-webpng) 
+![web scenario](docs/screenshots/11-zabbix-web.png) 
 
 ---
 
