@@ -1,0 +1,102 @@
+---
+- name: Install and configure Filebeat on web servers
+  hosts: web
+  become: true
+  vars:
+    elasticsearch_host: "elasticsearch.ru-central1.internal"
+    elasticsearch_port: 9200
+  tasks:
+    # --- 1. Подключение репозитория-зеркала Яндекса ---
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: true
+
+    - name: Add Elastic mirror repository (Yandex)
+      ansible.builtin.apt_repository:
+        repo: "deb [trusted=yes] https://mirror.yandex.ru/mirrors/elastic/8/ stable main"
+        filename: elastic-8.x
+        state: present
+
+    - name: Install Filebeat
+      ansible.builtin.apt:
+        name: filebeat
+        state: present
+        update_cache: true
+
+    # --- 2. Конфиг filebeat.yml (без изменений) ---
+    - name: Deploy filebeat.yml
+      ansible.builtin.copy:
+        dest: /etc/filebeat/filebeat.yml
+        owner: root
+        group: root
+        mode: '0600'
+        content: |
+          filebeat.inputs:
+            - type: filestream
+              id: nginx-access
+              enabled: true
+              paths:
+                - /var/log/nginx/access.log
+              fields:
+                log_type: nginx-access
+                app_name: nginx
+              fields_under_root: true
+
+            - type: filestream
+              id: nginx-error
+              enabled: true
+              paths:
+                - /var/log/nginx/error.log
+              fields:
+                log_type: nginx-error
+                app_name: nginx
+              fields_under_root: true
+
+          filebeat.config.modules:
+            path: ${path.config}/modules.d/*.yml
+            reload.enabled: false
+
+          output.elasticsearch:
+            hosts: ["http://{{ elasticsearch_host }}:{{ elasticsearch_port }}"]
+
+          setup.ilm.enabled: false
+
+          logging.level: info
+          logging.to_files: true
+          logging.files:
+            path: /var/log/filebeat
+            name: filebeat
+            keepfiles: 7
+            permissions: '0644'
+
+          processors:
+            - add_fields:
+                target: ''
+                fields:
+                  vm_hostname: '{{ inventory_hostname_short }}'
+
+    # --- 3. Запуск ---
+    - name: Ensure Filebeat is started and enabled
+      ansible.builtin.systemd:
+        name: filebeat
+        state: restarted
+        enabled: true
+        daemon_reload: true
+
+    - name: Wait for Filebeat to start
+      ansible.builtin.wait_for:
+        timeout: 15
+
+    - name: Check Filebeat service status
+      ansible.builtin.command: systemctl is-active filebeat
+      register: fb_status
+      changed_when: false
+
+    - name: Show Filebeat status
+      ansible.builtin.debug:
+        msg: "Filebeat status: {{ fb_status.stdout }}"

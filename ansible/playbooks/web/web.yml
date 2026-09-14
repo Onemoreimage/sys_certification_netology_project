@@ -1,0 +1,86 @@
+---
+- name: Install and configure Nginx on web servers
+  hosts: web
+  become: true
+  vars:
+    site_root: /var/www/diploma
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install Nginx
+      ansible.builtin.apt:
+        name: nginx
+        state: present
+
+    - name: Ensure Nginx is started and enabled
+      ansible.builtin.systemd:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Create site root directory
+      ansible.builtin.file:
+        path: "{{ site_root }}"
+        state: directory
+        owner: www-data
+        group: www-data
+        mode: '0755'
+
+    - name: Copy site index.html
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: "{{ site_root }}/index.html"
+        owner: www-data
+        group: www-data
+        mode: '0644'
+
+    - name: Configure Nginx site with SSI enabled
+      ansible.builtin.copy:
+        dest: /etc/nginx/sites-available/diploma
+        mode: '0644'
+        content: |
+          server {
+              listen 80 default_server;
+              listen [::]:80 default_server;
+
+              root {{ site_root }};
+              index index.html;
+
+              server_name _;
+
+              # Включаем SSI, чтобы на странице отображалось имя хоста
+              ssi on;
+
+              location / {
+                  try_files $uri $uri/ =404;
+              }
+          }
+
+    - name: Remove default Nginx site
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Enable diploma site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/diploma
+        dest: /etc/nginx/sites-enabled/diploma
+        state: link
+
+    - name: Validate Nginx configuration
+      ansible.builtin.command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Reload Nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
+      when: nginx_test.rc == 0
+
+    - name: Show Nginx test result
+      ansible.builtin.debug:
+        msg: "{{ nginx_test.stderr_lines }}"

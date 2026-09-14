@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Дипломный проект</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+    }
+    body {
+      background-color: #2e8b57;
+      color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    h1 {
+      font-size: 3rem;
+      letter-spacing: 2px;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.35);
+      padding: 1rem 2rem;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.1);
+    }
+    .hostname {
+      position: fixed;
+      bottom: 16px;
+      right: 24px;
+      font-size: 0.9rem;
+      opacity: 0.75;
+    }
+  </style>
+</head>
+<body>
+  <h1>Авдеев Александр Дмитриевич</h1>
+  <div class="hostname">Served by: <!--#echo var="hostname" --></div>
+</body>
+</html>

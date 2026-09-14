@@ -1,0 +1,129 @@
+---
+- name: Install Docker on Kibana host
+  hosts: kibana
+  become: true
+  tasks:
+    - name: Remove old Docker packages
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+          - docker-compose-v2
+          - docker-doc
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: true
+
+    - name: Get Debian package architecture
+      ansible.builtin.command: dpkg --print-architecture
+      register: docker_apt_arch
+      changed_when: false
+
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add Docker APT repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_apt_arch.stdout }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+
+    - name: Install Docker CE packages
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is started and enabled
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+- name: Deploy Kibana via Docker Compose
+  hosts: kibana
+  become: true
+  vars:
+    elasticsearch_fqdn: "elasticsearch.ru-central1.internal"
+  tasks:
+    - name: Create project directory
+      ansible.builtin.file:
+        path: /opt/kibana
+        state: directory
+        mode: '0755'
+
+    - name: Create docker-compose.yml
+      ansible.builtin.copy:
+        dest: /opt/kibana/docker-compose.yml
+        mode: '0644'
+        content: |
+          version: '3.8'
+          services:
+            kibana:
+              image: docker.elastic.co/kibana/kibana:8.15.0
+              container_name: kibana
+              restart: unless-stopped
+              environment:
+                - SERVERNAME=kibana
+                - ELASTICSEARCH_HOSTS=http://{{ elasticsearch_fqdn }}:9200
+                - SERVER_PUBLICBASEURL=http://kibana.ru-central1.internal:5601
+              ports:
+                - "5601:5601"
+              networks:
+                - kibana-net
+
+          networks:
+            kibana-net:
+              driver: bridge
+
+    - name: Run docker compose up
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /opt/kibana
+      register: compose_result
+      changed_when: compose_result.rc == 0
+
+    - name: Wait for Kibana to respond
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:5601/api/status"
+        method: GET
+        status_code: 200
+      register: kibana_status
+      until: kibana_status.status == 200
+      retries: 30
+      delay: 10
+      failed_when: false
+
+    - name: Show Kibana status
+      ansible.builtin.debug:
+        msg: "Kibana HTTP status: {{ kibana_status.status | default('not ready yet') }}"

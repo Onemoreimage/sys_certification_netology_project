@@ -1,0 +1,152 @@
+---
+- name: Install Docker on Elasticsearch host
+  hosts: elasticsearch
+  become: true
+  tasks:
+    - name: Remove old Docker packages
+      ansible.builtin.apt:
+        name:
+          - docker.io
+          - docker-compose
+          - docker-compose-v2
+          - docker-doc
+          - podman-docker
+          - containerd
+          - runc
+        state: absent
+
+    - name: Install prerequisite packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+        state: present
+        update_cache: true
+
+    - name: Get Debian package architecture
+      ansible.builtin.command: dpkg --print-architecture
+      register: docker_apt_arch
+      changed_when: false
+
+    - name: Create keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: '0644'
+
+    - name: Add Docker APT repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch={{ docker_apt_arch.stdout }}
+          signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+
+    - name: Install Docker CE packages
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Ensure Docker service is started and enabled
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Set vm.max_map_count for Elasticsearch
+      ansible.builtin.sysctl:
+        name: vm.max_map_count
+        value: '262144'
+        state: present
+        reload: true
+
+- name: Deploy Elasticsearch via Docker Compose
+  hosts: elasticsearch
+  become: true
+  tasks:
+    - name: Create project directory
+      ansible.builtin.file:
+        path: /opt/elasticsearch
+        state: directory
+        mode: '0755'
+
+    - name: Create docker-compose.yml
+      ansible.builtin.copy:
+        dest: /opt/elasticsearch/docker-compose.yml
+        mode: '0644'
+        content: |
+          version: '3.8'
+          services:
+            elasticsearch:
+              image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+              container_name: elasticsearch
+              restart: unless-stopped
+              environment:
+                - node.name=elasticsearch
+                - cluster.name=diploma-cluster
+                - discovery.type=single-node
+                - bootstrap.memory_lock=true
+                - xpack.security.enabled=false
+                - xpack.security.enrollment.enabled=false
+                - xpack.security.http.ssl.enabled=false
+                - xpack.security.transport.ssl.enabled=false
+                - cluster.routing.allocation.disk.threshold_enabled=false
+                - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+              ulimits:
+                memlock:
+                  soft: -1
+                  hard: -1
+                nofile:
+                  soft: 65536
+                  hard: 65536
+              volumes:
+                - esdata:/usr/share/elasticsearch/data
+              ports:
+                - "9200:9200"
+              networks:
+                - es-net
+
+          volumes:
+            esdata:
+
+          networks:
+            es-net:
+              driver: bridge
+
+    - name: Run docker compose up
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: /opt/elasticsearch
+      register: compose_result
+      changed_when: compose_result.rc == 0
+
+    - name: Wait for Elasticsearch to respond
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:9200/_cluster/health"
+        method: GET
+        status_code: 200
+      register: es_health
+      until: es_health.status == 200
+      retries: 30
+      delay: 10
+
+    - name: Show cluster health
+      ansible.builtin.debug:
+        msg: "Cluster status: {{ es_health.json.status }}"

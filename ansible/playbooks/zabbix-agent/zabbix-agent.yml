@@ -1,0 +1,78 @@
+---
+- name: Install and configure Zabbix Agent 2
+  hosts: web:elasticsearch
+  become: true
+  vars:
+    zabbix_server_fqdn: "zabbix.ru-central1.internal"
+    zabbix_server_active: "zabbix.ru-central1.internal:10051"
+    zabbix_version: "7.0"
+    zabbix_release_deb: "zabbix-release_7.0-2+ubuntu22.04_all.deb"
+  tasks:
+    - name: Install prerequisites
+      ansible.builtin.apt:
+        name:
+          - wget
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Download Zabbix repository package
+      ansible.builtin.get_url:
+        url: "https://repo.zabbix.com/zabbix/{{ zabbix_version }}/ubuntu/pool/main/z/zabbix-release/{{ zabbix_release_deb }}"
+        dest: "/tmp/{{ zabbix_release_deb }}"
+        mode: '0644'
+
+    - name: Install Zabbix repository
+      ansible.builtin.apt:
+        deb: "/tmp/{{ zabbix_release_deb }}"
+
+    - name: Update apt cache after adding Zabbix repo
+      ansible.builtin.apt:
+        update_cache: true
+
+    - name: Install zabbix-agent2
+      ansible.builtin.apt:
+        name: zabbix-agent2
+        state: present
+
+    - name: Deploy zabbix_agent2.conf
+      ansible.builtin.copy:
+        dest: /etc/zabbix/zabbix_agent2.conf
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          PidFile=/run/zabbix/zabbix_agent2.pid
+          LogFile=/var/log/zabbix/zabbix_agent2.log
+          LogFileSize=0
+          Server={{ zabbix_server_fqdn }}
+          ServerActive={{ zabbix_server_active }}
+          Hostname={{ inventory_hostname_short }}
+          Include=/etc/zabbix/zabbix_agent2.d/*.conf
+          Include=/etc/zabbix/zabbix_agent2.d/plugins.d/*.conf
+      notify: restart zabbix-agent2
+
+    - name: Ensure Zabbix Agent is started and enabled
+      ansible.builtin.systemd:
+        name: zabbix-agent2
+        state: started
+        enabled: true
+
+    - name: Wait for agent to start
+      ansible.builtin.wait_for:
+        timeout: 5
+
+    - name: Check agent status
+      ansible.builtin.command: systemctl is-active zabbix-agent2
+      register: agent_status
+      changed_when: false
+
+    - name: Show agent status
+      ansible.builtin.debug:
+        msg: "Zabbix Agent status on {{ inventory_hostname_short }}: {{ agent_status.stdout }}"
+
+  handlers:
+    - name: restart zabbix-agent2
+      ansible.builtin.systemd:
+        name: zabbix-agent2
+        state: restarted
