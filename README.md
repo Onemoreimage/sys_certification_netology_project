@@ -258,9 +258,7 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 
 **Web Scenario `Check site via ALB` — мониторинг HTTP-доступности сайта:**
 
-| Статус сценария | Время отклика |
-|---|---|
-| ![web scenario](docs/screenshots/12-zabbix-web-scenario.png) | ![response time](docs/screenshots/13-zabbix-response-time.png) |
+![web scenario](docs/screenshots/12-zabbix-webpng) 
 
 ---
 
@@ -270,11 +268,6 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 
 ![Kibana discover](docs/screenshots/14-kibana-discover.png)
 
-**Дашборд с распределением логов по веб-серверам:**
-
-![Kibana dashboard](docs/screenshots/15-kibana-dashboard.png)
-
----
 
 ### 5. Резервное копирование
 
