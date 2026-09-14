@@ -222,14 +222,13 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 
 **Создание 25 ресурсов в Yandex Cloud через `terraform apply`:**
 
-| Ресурсы VPC | Ресурсы Compute | Ресурсы ALB |
-|---|---|---|
-| ![terraform apply 1](docs/screenshots/01-terraform-apply.png) | ![terraform apply 2](docs/screenshots/02-terraform-apply.png) | ![terraform apply 3](docs/screenshots/03-terraform-apply.png) |
-| ![terraform apply 4](docs/screenshots/04-terraform-apply.png) | ![terraform apply 5](docs/screenshots/05-terraform-apply.png) | |
 
-**Результат применения — публичные IP и FQDN всех ресурсов:**
+![terraform apply 1](docs/screenshots/01-terraform-apply.png)
+![terraform apply 2](docs/screenshots/02-terraform-apply.png)
+![terraform apply 3](docs/screenshots/03-terraform-apply.png) 
+![terraform apply 4](docs/screenshots/04-terraform-apply.png)
+![terraform apply 5](docs/screenshots/05-terraform-apply.png) 
 
-![terraform output](docs/screenshots/06-terraform-output.png)
 
 ---
 
@@ -239,11 +238,11 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 
 | Web-01 | Web-02 |
 |---|---|
-| ![site on web-01](docs/screenshots/07-nginx-site-web01.png) | ![site on web-02](docs/screenshots/08-nginx-site-web02.png) |
+| ![site on web-01](docs/screenshots/05-nginx-site.png) | ![site on web-02](docs/screenshots/04-nginx-site.png) |
 
 **Распределение трафика 50/50 подтверждается дашбордом Kibana:**
 
-![traffic split](docs/screenshots/09-kibana-traffic-split.png)
+![traffic split](docs/screenshots/10-kibana-dashboard.png)
 
 ---
 
@@ -255,7 +254,7 @@ ansible-playbook -i inventory.ini playbooks/filebeat/filebeat.yml
 
 **Дашборд с USE-метриками (Utilization, Saturation, Errors):**
 
-![Zabbix dashboard](docs/screenshots/11-zabbix-dashboard.png)
+![Zabbix dashboard](docs/screenshots/06-zabbix-dashboard.png)
 
 **Web Scenario `Check site via ALB` — мониторинг HTTP-доступности сайта:**
 
